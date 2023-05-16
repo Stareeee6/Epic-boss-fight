@@ -1,0 +1,345 @@
+setSize(900,500);
+// Controls for the keys
+const Up = "w" || "W";
+const Down = "s" || "S";
+const Left = "a" || "A";
+const Right = "d" || "D";
+//
+//music for the game:
+let music;
+//
+function setUp(){
+    // Prompts the user 3 options for the background(if they don't pick either of the three it'll prompt the user again):
+    while(true){
+        let backgroundChoice = readInt("Choose background: 1.Day Time, 2. Sunset, 3.Night Time: ");
+        if(backgroundChoice <= 3){
+            backGround(backgroundChoice);//Function at line 52 sets up 2 backgrounds for a continuous background scroll
+            break;
+            }
+        }
+        // 
+    music = new Audio("https://codehs.com/uploads/c90b1507b879c5a4187bcbbca399911d"); //I got the music from this video https://www.youtube.com/watch?v=kqjbRIC3XGg
+    music.play();
+    music.loop = true;    
+    spawnCharacters(); //Function at line 80, setups the graphics for the player, enemy, and text of the player and enemy's health
+    
+    
+    keyDownMethod(keyDown); 
+    keyUpMethod(keyUp); 
+    
+}
+    // Arrays for the backgrounds, the first array is a daytime background, second array is a sunset background, third array is night time background
+    let backGroundIMG = ["https://codehs.com/uploads/56e1cc392a9c3e2e044378980417a5d4", "https://codehs.com/uploads/b2637f479556885746d2593f19f36dda", "https://codehs.com/uploads/414c25b77a72644828397d983a2e488c"]; 
+    let otherBackgroundIMG = ["https://codehs.com/uploads/56e1cc392a9c3e2e044378980417a5d4", "https://codehs.com/uploads/b2637f479556885746d2593f19f36dda", "https://codehs.com/uploads/414c25b77a72644828397d983a2e488c"];
+    //otherBackground is used to place behind background.
+   // once the user chooses their background, in the backGround function it sees what the user picked and updates these 2 global variables
+    let newBackground;
+    let otherBackground;
+    //
+    // Player and enemy variables 
+    let player;
+    let enemy;
+    let playerHealth = 100;
+    let enemyHealth = 145;
+    let playerHealthVal;
+    let enemyHealthVal;
+    //
+    // Variables for how to player moves in the game
+    let canControl = 1; 
+    let playerMoveSpeed = 5; 
+    let moveArrHorizontal = [-1, 0, 1]
+    let moveArrVertical = [-1, 0, 1]
+    let horizontalMove = 0;
+    let verticalMove = 0; 
+    let collisionX = 1;
+    let collisionY = 1; 
+    //
+// This function looks at what the user chooses for their background and updates the 2 variables: newBackground, and otherBackground   
+function backGround(choice){
+    if(choice == 1){
+        newBackground = new WebImage(backGroundIMG[0]);
+        otherBackground = new WebImage(otherBackgroundIMG[0]);
+   }else if(choice == 2){
+        newBackground = new WebImage(backGroundIMG[1]);
+        otherBackground = new WebImage(otherBackgroundIMG[1]);
+   }else if(choice == 3){
+        newBackground = new WebImage(backGroundIMG[2]);
+        otherBackground = new WebImage(otherBackgroundIMG[2]);
+   }
+   
+    otherBackground.setPosition(1500, newBackground.getY());
+    add(newBackground);
+   add(otherBackground);
+}
+// This function makes the background move in a endless loop
+function scroll(){
+    newBackground.move(-5,0);
+    otherBackground.move(-5,0);
+    if(newBackground.getX() + 1500 <= 0){
+        newBackground.setPosition(1500,0);
+    }
+     if(otherBackground.getX() + 1500 <= 0){
+         otherBackground.setPosition(1500,0);
+     }
+}
+setTimer(scroll,0);
+//Function is used to setup the graphics for the game besides background
+function spawnCharacters(){
+    player = new Circle(40);
+    player.setColor("green");
+    player.setPosition(getWidth()/2, getHeight()/2);
+    add(player);
+    
+    enemy = new Rectangle(100,1000);
+    enemy.setPosition(800, 0);
+    enemy.setColor("black");
+    enemy.layer = 5;
+    add(enemy);
+    
+    playerHealthVal = new Text("Health: " + playerHealth, "10pt Verdana");
+    playerHealthVal.setColor("White");
+    playerHealthVal.setPosition(0,480);
+    add(playerHealthVal);
+    
+    enemyHealthVal = new Text("Enemy Health: " + enemyHealth, "10pt Verdana");
+    enemyHealthVal.setColor("White");
+    enemyHealthVal.setPosition(770,480);
+    enemyHealthVal.layer = 6;
+    add(enemyHealthVal);
+    
+}
+// Variables for the players only attack option;
+let isParry = false;
+let parryTime = 0;
+//
+// Function is used to see what to do when a player presses down certain keys
+function keyDown(e){
+    //Allow player to move left
+     if (e.key == Left){
+        horizontalMove = moveArrHorizontal[0]; 
+        isParry = false;
+        player.setColor("green");
+    }
+    //Allow player to move right
+    if (e.key == Right){
+        horizontalMove = moveArrHorizontal[2]; 
+        isParry = false;
+        player.setColor("green");
+    }
+    //Allow player to move up
+    if (e.key == Up){
+        verticalMove = moveArrVertical[0]; 
+        isParry = false;
+        player.setColor("green");
+    }
+    //Allow player to move down
+    if (e.key == Down){
+        verticalMove = moveArrVertical[2]; 
+        isParry = false;
+        player.setColor("green");
+    }
+    //Allows the use of the parry attack for the player.
+    if(e.key == "k" && e.key != Left && e.key != Right && e.key != Up && e.key != Down){
+        isParry = true;
+        parryTime++;
+        player.setColor("#90EE90"); //Player turn into light green to indicate that parry is activated
+        //player can only hold parry for a certain amount of time
+        //if player holds down the parry for too long then it wont work and you'll have to let go the key
+        if(parryTime > 2){
+            isParry = false;
+            player.setColor("green");
+        }
+    }
+}
+//Sees what to do if certain keys are no longer being pressed
+function keyUp(e){
+    // Makes it so the player is not endlessly moving around when keys are up
+     if (e.key == Left ){
+        horizontalMove = moveArrHorizontal[1]; 
+    }
+    if (e.key == Right){
+        horizontalMove = moveArrHorizontal[1]; 
+    }
+    if (e.key == Up){
+        verticalMove = moveArrVertical[1]; 
+    }
+    if(e.key == Down){
+        verticalMove = moveArrVertical[1]; 
+    }
+    //
+    //Resets the parry time so you can do it again
+    if(e.key == "k"){
+        isParry = false;
+        parryTime = 0;
+        player.setColor("green");
+    }
+    //
+}
+//Setups the movement for the player
+function playerMove(){
+    player.move(canControl * playerMoveSpeed * horizontalMove + collisionX, canControl * playerMoveSpeed * verticalMove + collisionY); 
+}
+setTimer(playerMove,0);
+
+//The function is used to the player doesn't go over the canvas
+function HandlePlayerDetection(){
+    // Wall Detection
+    if (player.getX() > getWidth() - 31){
+        if (horizontalMove > 0){
+            collisionX = -playerMoveSpeed;
+        }
+    } else if (player.getX() < 0 + 31){
+        if (horizontalMove < 0){
+            collisionX = playerMoveSpeed; 
+        }
+    } else{
+        collisionX = 0; 
+    }
+    
+    if (player.getY() < 0 + 31.5){
+        if (verticalMove < 0){
+            collisionY = playerMoveSpeed;
+        }
+    } else if (player.getY() > getHeight() - 31){
+        if (verticalMove > 0){
+            collisionY = -playerMoveSpeed; 
+        }
+    } else{
+        collisionY = 0; 
+    }
+}
+setTimer(HandlePlayerDetection,0);
+
+//Variables for the enemy's projectiles
+let projectile;
+let projectile2;
+//
+//Variables to help indicate when the projectile is gone
+let gone = false;
+let gone2 = false;
+//
+//Sets up the graphics for the projectiles every 5 seconds and calls other at another function to set up the speed of the projectile
+function projectileSetup(){
+    projectile = new Circle(70);
+    projectile2 = new Circle(70);
+    projectile.setPosition(950, Randomizer.nextInt(0, getHeight()));
+    projectile2.setPosition(950, Randomizer.nextInt(0, getHeight()));
+    projectile.setColor("red");
+    projectile2.setColor("red");
+    add(projectile);
+    add(projectile2);
+    projectileAttack();
+    stopTimer(projectileSetup);
+}
+setTimer(projectileSetup, 1000*5);
+//
+//Variables for how fast the projectile travels
+let dX;
+
+let dX2;
+//
+//Sets up dX and Dx2 and calls other function to make the projectile move and also check on the conditions of the projectiles
+function projectileAttack(){
+    dX = -10;
+    dX2 = -10;
+    setTimer(projectileMove, 0)
+    setTimer(checkProjectile, 0);
+}
+// Makes projectile move
+function projectileMove(){
+    projectile.move(dX,0);
+    projectile2.move(dX2,0);
+}
+//
+//Variable use to help indicate if the projectiels have been parried or not
+let isReflected = false;
+let isReflected2 = false;
+//
+//Function constanly checks the Conditions of the projectiles
+function checkProjectile(){
+    let elem = getElementAt(player.getX(), player.getY());
+    //These 2 if statements check if the projectiles go off screen
+    if(projectile.getX() + 70 <= -50){
+        remove(projectile);
+        gone = true;
+    }
+    if(projectile2.getX() + 70 <= -50){
+        remove(projectile2);
+        gone2 = true;
+    }
+    //
+    //These 2 if statments check if the player has been hit by a projectile and subtracts the players health
+    if(elem == projectile && isParry != true){
+        remove(projectile);
+        gone = true;
+        playerHealth = playerHealth - 20;
+        playerHealthVal.setText("Health: " + playerHealth);
+    } else if(elem == projectile2&& isParry != true){
+        remove(projectile2);
+        gone2 = true;
+        playerHealth = playerHealth - 20;
+        playerHealthVal.setText("Health: " + playerHealth);
+    }
+    //
+    //Checks what happens if player hits a projectile with a parry
+    //If player does hit it with a parry then dX or dX2 intergers get multiply by -1 to change the direction of the projectile to hit the enemy
+    if(elem == projectile && isParry == true){
+        dX = dX * -1;
+        projectile.setColor("#FF6865");
+        isReflected = true;
+    } else if(elem == projectile2 && isParry == true){
+        dX2 = dX2 * -1;
+         projectile2.setColor("#FF6865");
+         isReflected2 = true;
+    }
+    //
+    // Once the player hits the projectile with a parry, since the enemy is stationary in game it checks for a certain amount of distance
+    // of how far the projectile is going towards the right, once it goes far enough it will damage the enemy and subtract it's health
+    if(projectile.getX() + 45 >= enemy.getX() && isReflected == true){
+        remove(projectile);
+        gone = true;
+        enemyHealth = enemyHealth - 15;
+        enemyHealthVal.setText("Enemy Health: " + enemyHealth);
+        isReflected = false;
+    }
+    if(projectile2.getX() + 45 >= enemy.getX() && isReflected2 == true){
+        remove(projectile2);
+        gone2 = true;
+        enemyHealth = enemyHealth - 15;
+        enemyHealthVal.setText("Enemy Health: " + enemyHealth);
+        isReflected2 = false;
+    }
+    //
+    //Once both projectiles are gone in game it set the gone and is reflected variables to false and calls on projectleSetup function again
+     if(gone == true && gone2 == true){
+        gone = false;
+        gone2 = false;
+        isReflected = false;
+        isReflected2 = false;
+        stopTimer(projectileMove);
+        setTimer(projectileSetup, 1000*5);
+    }
+}
+//
+//Function is used to see what to do once either the player's health or enemy's health goes down all the way.
+function checkGame(){
+    if(playerHealth <= 0){
+        removeAll();
+        music.pause();
+        let txt = new Text("GAME OVER!", "100pt Verdana");
+        txt.setPosition(0, getHeight()/2);
+        add(txt);
+        stopTimer(checkGame)
+    }
+    if(enemyHealth <= 0){
+        removeAll();
+        music.pause();
+        let txt = new Text("YOU WIN!", "100pt Verdana");
+        txt.setPosition(0, getHeight()/2);
+        add(txt);
+        stopTimer(checkGame);
+    }
+}
+setTimer(checkGame,0);
+//
+setUp();
